@@ -1,25 +1,80 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>CloudPay API Docs</title>
+<title>CloudPay API Docs</title>
+<style>
+body{font-family:Arial;padding:40px}
+code{background:#eee;padding:5px;border-radius:5px}
+pre{background:#f4f4f4;padding:10px}
+</style>
 </head>
+
 <body>
-  <h2>CloudPay API</h2>
 
-  <ul>
-    <li>POST /api/v1/payments</li>
-    <li>POST /api/v1/payments/{id}/capture</li>
-    <li>POST /api/v1/payments/{id}/refunds</li>
-    <li>GET /api/v1/webhooks</li>
-    <li>POST /api/v1/webhooks/{id}/retry</li>
-    <li>GET /api/v1/test/jobs/status</li>
-  </ul>
+<h1>CloudPay Payment Gateway API</h1>
 
-  <p><b>Authentication:</b></p>
-  <pre>
-X-Api-Key: key_test_abc123
-X-Api-Secret: secret_test_xyz789
-  </pre>
+<h2>Create Payment</h2>
+
+<p>Endpoint:</p>
+
+<pre><code>POST /api/v1/payments</code></pre>
+
+<p>Headers:</p>
+
+<pre><code>
+x-api-key: test_key
+x-api-secret: test_secret
+idempotency-key: unique_key
+</code></pre>
+
+<p>Body:</p>
+
+<pre><code>
+{
+ "amount": 100
+}
+</code></pre>
+
+<h2>Capture Payment</h2>
+
+<pre><code>
+POST /api/v1/payments/{id}/capture
+</code></pre>
+
+<h2>Create Refund</h2>
+
+<pre><code>
+POST /api/v1/payments/{id}/refunds
+</code></pre>
+
+<p>Body:</p>
+
+<pre><code>
+{
+ "amount": 50
+}
+</code></pre>
+
+<h2>Webhook Events</h2>
+
+<p>CloudPay sends webhooks when events occur.</p>
+
+<pre><code>
+payment.success
+payment.failed
+refund.processed
+</code></pre>
+
+<h2>Verify Webhook Signature</h2>
+
+<pre><code>
+const crypto = require("crypto")
+
+const signature = crypto
+.createHmac("sha256", webhook_secret)
+.update(JSON.stringify(payload))
+.digest("hex")
+</code></pre>
+
 </body>
 </html>
-

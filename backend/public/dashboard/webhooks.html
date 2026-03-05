@@ -24,6 +24,38 @@
 
     load();
   </script>
+  <script>
+
+async function loadLogs(){
+
+  const res = await fetch("/api/v1/webhooks",{
+    headers:{
+      "x-api-key":"test_key",
+      "x-api-secret":"test_secret"
+    }
+  });
+
+  const logs = await res.json();
+
+  const table = document.querySelector("tbody");
+
+  table.innerHTML="";
+
+  logs.forEach(log=>{
+    table.innerHTML += `
+      <tr>
+        <td>${log.id}</td>
+        <td>${log.status}</td>
+        <td>${log.response_code}</td>
+      </tr>
+    `;
+  });
+
+}
+
+loadLogs();
+
+</script>
 </body>
 </html>
  

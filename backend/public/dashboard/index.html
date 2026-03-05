@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <h2>Webhook Logs</h2>
+
+<table border="1">
+<thead>
+<tr>
+<th>ID</th>
+<th>Status</th>
+<th>Response Code</th>
+</tr>
+</thead>
+
+<tbody id="logs"></tbody>
+</table>
+
+<script>
+
+fetch("/api/v1/webhooks/logs")
+.then(res=>res.json())
+.then(data=>{
+ const table=document.getElementById("logs")
+
+ data.forEach(log=>{
+   table.innerHTML+=`
+   <tr>
+   <td>${log.id}</td>
+   <td>${log.status}</td>
+   <td>${log.response_code}</td>
+   </tr>
+   `
+ })
+})
+
+</script>
+</body>
+</html>

@@ -46,6 +46,28 @@
     <button onclick="pay()">Pay</button>
   </div>
 
-  <script src="checkout.js"></script>
+  <script>
+async function makePayment() {
+
+  const amount = document.getElementById("amount").value;
+
+  const res = await fetch("/api/v1/payments", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": "test_key",
+      "x-api-secret": "test_secret",
+      "idempotency-key": Date.now()
+    },
+    body: JSON.stringify({ amount })
+  });
+
+  const data = await res.json();
+
+  alert("Payment Created: " + data.id);
+}
+
+document.querySelector("button").addEventListener("click", makePayment);
+</script>
 </body>
 </html>

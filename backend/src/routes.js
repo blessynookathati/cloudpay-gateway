@@ -10,7 +10,17 @@ const {
 
 const router = express.Router();
 
-/* APPLY AUTH TO ALL ROUTES */
+/* PUBLIC JOB STATUS ENDPOINT (NO AUTH) */
+router.get("/api/v1/test/jobs/status", async (req, res) => {
+  res.json({
+    payments: await paymentQueue.getJobCounts(),
+    refunds: await refundQueue.getJobCounts(),
+    webhooks: await webhookQueue.getJobCounts(),
+    worker_status: "running"
+  });
+});
+
+/* APPLY AUTH TO ALL ROUTES BELOW */
 router.use(auth);
 
 /* CREATE PAYMENT */
@@ -48,8 +58,10 @@ router.post("/api/v1/payments", async (req, res) => {
 
   res.status(201).json(response);
 });
+
 /* CAPTURE PAYMENT */
 router.post("/api/v1/payments/:id/capture", async (req, res) => {
+
   const payment = await db.query(
     "SELECT * FROM payments WHERE id=$1 AND merchant_id=$2",
     [req.params.id, req.merchant.id]
@@ -73,46 +85,60 @@ router.post("/api/v1/payments/:id/capture", async (req, res) => {
   );
 
   res.json({ status: "captured" });
+
 });
 
 /* CREATE REFUND */
 router.post("/api/v1/payments/:id/refunds", async (req, res) => {
+
   const refundId = "rfnd_" + uuid();
+  const amount = req.body.amount;
+  const paymentId = req.params.id;
 
   const payment = await db.query(
     "SELECT * FROM payments WHERE id=$1 AND merchant_id=$2",
-    [req.params.id, req.merchant.id]
+    [paymentId, req.merchant.id]
   );
 
   if (!payment.rows.length || payment.rows[0].status !== "success") {
     return res.status(400).json({ error: "Invalid payment" });
   }
 
-  if (req.body.amount > payment.rows[0].amount) {
+  const totalRefund = await db.query(
+    "SELECT COALESCE(SUM(amount),0) as total FROM refunds WHERE payment_id=$1",
+    [paymentId]
+  );
+
+  if (totalRefund.rows[0].total + amount > payment.rows[0].amount) {
     return res.status(400).json({ error: "Refund exceeds payment amount" });
   }
 
   await db.query(
     "INSERT INTO refunds (id, payment_id, amount, status) VALUES ($1,$2,$3,'pending')",
-    [refundId, req.params.id, req.body.amount]
+    [refundId, paymentId, amount]
   );
 
   await refundQueue.add({ refundId });
 
   res.json({ id: refundId, status: "pending" });
+
 });
 
 /* WEBHOOK LOGS */
 router.get("/api/v1/webhooks", async (req, res) => {
+
   const logs = await db.query(
     "SELECT * FROM webhook_logs WHERE merchant_id=$1 ORDER BY created_at DESC",
     [req.merchant.id]
   );
+
   res.json(logs.rows);
+
 });
 
 /* MANUAL WEBHOOK RETRY */
 router.post("/api/v1/webhooks/:id/retry", async (req, res) => {
+
   const log = await db.query(
     "SELECT * FROM webhook_logs WHERE id=$1 AND merchant_id=$2",
     [req.params.id, req.merchant.id]
@@ -129,16 +155,7 @@ router.post("/api/v1/webhooks/:id/retry", async (req, res) => {
   });
 
   res.json({ message: "Retry scheduled" });
-});
 
-/* JOB STATUS */
-router.get("/api/v1/test/jobs/status", async (req, res) => {
-  res.json({
-    payments: await paymentQueue.getJobCounts(),
-    refunds: await refundQueue.getJobCounts(),
-    webhooks: await webhookQueue.getJobCounts(),
-    worker_status: "running"
-  });
 });
 
 module.exports = router;
